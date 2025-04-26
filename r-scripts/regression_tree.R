@@ -44,8 +44,25 @@ y_dato
 y_pred_test <- predict(tree_boston, test)
 mean( (test$medv - y_pred_test)**2 )
 
+set.seed(3)
+cv_boston <- cv.tree(tree_boston, K = 10)
+cv_boston
+plot(cv_boston$size, cv_boston$dev, type = 'b')
 
-max_tree <- tree(medv~. , Boston, mincut=1, minsize=2, mindev=0.005)
-fgl <- cv.tree(max_tree,, prune.tree)
-plot(fgl)
+pruned_tree <- prune.tree( tree_boston, best= 5 )
+plot(pruned_tree)
+text(pruned_tree)
 
+set.seed(3)
+max_tree <- tree(medv~. , Boston, mincut=1, minsize=2, mindev=0.0005)
+cv_boston <- cv.tree(max_tree, K = 10)
+cv_boston
+plot(cv_boston$size, cv_boston$dev, type = 'b')
+
+pruned_tree <- prune.tree( max_tree, best= 9 )
+plot(pruned_tree)
+text(pruned_tree, cex=0.5)
+
+
+plot(max_tree)
+text(max_tree, cex=0.5)
