@@ -66,3 +66,49 @@ text(pruned_tree, cex=0.5)
 
 plot(max_tree)
 text(max_tree, cex=0.5)
+
+#############################################
+
+library('tree')
+set.seed(2)
+airquality
+sample <- sample.int(n = nrow(airquality), size = floor(.5*nrow(airquality)), replace = F)
+train <- airquality[sample, ]
+test  <- airquality[-sample, ]
+tree_aq <- tree(Ozone ~. , train)
+summary(tree_aq)
+y_pred_test <- predict(tree_aq, test)
+mean( (test$Ozone - y_pred_test)**2 )
+#hay que remover los nulos
+mean((test$Ozone - y_pred_test)^2, na.rm=TRUE)
+
+cv_aq <- cv.tree(tree_aq, FUN = prune.tree, K = 10)
+plot(cv_aq$size, cv_aq$dev, type = "b", pch = 19,
+     xlab = "Número de nodos terminales",
+     ylab = "Deviance (CV 10-fold)",
+     main = "Error de CV vs. tamaño del árbol")
+
+
+optimal_size <- cv_aq$size[which.min(cv_aq$dev)]
+cat("Tamaño óptimo:", optimal_size, "\n")
+tree_aq2 <- prune.tree(tree_aq, best = optimal_size)
+y_pred_test2 <- predict(tree_aq2, test)
+mean((test$Ozone - y_pred_test2)^2, na.rm = TRUE)
+
+par(mfrow = c(1, 2))
+plot(tree_aq)
+text(tree_aq, cex=0.5)
+plot(tree_aq2)
+text(tree_aq2, cex=0.5)
+
+# Métricas comparativas
+cat("== Comparación de Árboles ==\n")
+cat("Árbol original:\n")
+cat("  Nodos terminales:", length(unique(tree_aq$where)), "\n")
+cat("  Deviance (entrenamiento):", summary(tree_aq)$dev, "\n")
+cat("  MSE test:", mean((test$Ozone - y_pred_test)^2, na.rm = TRUE), "\n\n")
+
+cat("Árbol podado:\n")
+cat("  Nodos terminales:", length(unique(tree_aq2$where)), "\n")
+cat("  Deviance (entrenamiento):", summary(tree_aq2)$dev, "\n")
+cat("  MSE test:", mean((test$Ozone - y_pred_test2)^2, na.rm = TRUE), "\n")
