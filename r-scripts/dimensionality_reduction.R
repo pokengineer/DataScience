@@ -5,7 +5,7 @@ library(GGally)
 library(ggplot2)
 library(aplpack)
 library(corrplot)
-
+library(MASS)
 ##############  Visualizaciones ############## 
 
 pairs( USArrests )
@@ -112,7 +112,7 @@ plot( X%*%alfa1,(-1)*X%*%alfa2)
 data <- read.csv("https://stats.idre.ucla.edu/stat/data/mmreg.csv")
 data$Y <- (data$science > 50 ) * 1  # me invente un target
 
-# LDA 
+# LogReg 
 a.glm <- glm( Y  ~ read + math, data=data, family=binomial)
 
 read_seq  <- seq(min(data$read)  - 1, max(data$read)  + 1, length.out = 200)
@@ -122,6 +122,22 @@ grid <- expand.grid(read = read_seq, math = math_seq)
 y_pred <- predict(a.glm, newdata = grid, type="response")
 grid$Y <- y_pred 
 grid$Y_bin <- y_pred > 0.5
+
+ggplot()+
+  geom_raster( data = grid, aes(read, math, fill=Y)) +
+  #scale_fill_continuous(palette = "viridis") +
+  geom_point(data = data, aes(x = read, y = math, color = factor(Y)), size = 2) +
+  geom_contour(data = grid, aes(x = read, y = math, z = Y),breaks = 0.5, color = "white", size = 0.6) + 
+  scale_color_manual(name = "Y (observado)", values = c("0" = "blue", "1" = "red")) +
+  labs(x = "read", y = "math", title = "Mapa de probabilidades (logit) y puntos") +
+  theme_minimal()
+
+# LDA 
+a.lda <- lda( Y  ~ read + math, data=data, family=binomial)
+
+y_pred <- predict(a.lda, newdata = grid, type="response")
+grid$Y <- y_pred$posterior[,1]
+grid$Y_bin <- y_pred$class
 
 ggplot()+
   geom_raster( data = grid, aes(read, math, fill=Y)) +
@@ -149,10 +165,35 @@ ggplot()+
 
 ### SVM
 library(e1071)
-a.svm <- svm(Y ~ read + write + math, data = data, kernel = "linear")
+a.svm <- svm(Y  ~ read + math, data = data, kernel = "linear")
+y_pred <- predict(a.svm, newdata = grid)
+grid$Y <- y_pred 
+grid$Y_bin <- y_pred > 0.5
 
-y_pred <- predict(a.svm, newdata = data)
+ggplot()+
+  geom_raster( data = grid, aes(read, math, fill=Y)) +
+  #scale_fill_continuous(palette = "viridis") +
+  geom_point(data = data, aes(x = read, y = math, color = factor(Y)), size = 2) +
+  geom_contour(data = grid, aes(x = read, y = math, z = Y),breaks = 0.5, color = "white", size = 0.6) + 
+  scale_color_manual(name = "Y (observado)", values = c("0" = "blue", "1" = "red")) +
+  labs(x = "read", y = "math", title = "Mapa de probabilidades (logit) y puntos") +
+  theme_minimal()
 
+
+### bayes
+a.nb <- naiveBayes(Y  ~ read + math, data = data)
+y_pred <- predict(a.nb, newdata=grid[1:2],type = 'raw')
+grid$Y <- y_pred[,1]
+grid$Y_bin <- y_pred[,1] > 0.5
+
+ggplot()+
+  geom_raster( data = grid, aes(read, math, fill=Y)) +
+  #scale_fill_continuous(palette = "viridis") +
+  geom_point(data = data, aes(x = read, y = math, color = factor(Y)), size = 2) +
+  geom_contour(data = grid, aes(x = read, y = math, z = Y),breaks = 0.5, color = "white", size = 0.6) + 
+  scale_color_manual(name = "Y (observado)", values = c("0" = "blue", "1" = "red")) +
+  labs(x = "read", y = "math", title = "Mapa de probabilidades (logit) y puntos") +
+  theme_minimal()
 
 ############## Clustering #########################
 
